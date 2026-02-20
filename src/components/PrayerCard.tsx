@@ -1,6 +1,15 @@
 import React from 'react';
-import { Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { getPrayerLabel } from '../i18n';
+import { COLORS, SPACING, FONT_SIZES, RADIUS, GLASS_CARD } from '../constants/theme';
+
+const PRAYER_ICONS: Record<string, string> = {
+  fajr: '🌙',
+  dhuhr: '☀️',
+  asr: '🌤️',
+  maghrib: '🌅',
+  isha: '🌃',
+};
 
 interface PrayerCardProps {
   name: string;
@@ -11,6 +20,9 @@ interface PrayerCardProps {
 export const PrayerCard: React.FC<PrayerCardProps> = ({ name, time, onPress }) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.iconWrap}>
+        <Text style={styles.icon}>{PRAYER_ICONS[name.toLowerCase()] || '🕐'}</Text>
+      </View>
       <Text style={styles.prayerName}>{getPrayerLabel(name)}</Text>
       <Text style={styles.prayerTime}>{time}</Text>
     </TouchableOpacity>
@@ -19,28 +31,37 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({ name, time, onPress }) =
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 12,
-    marginVertical: 6,
+    ...GLASS_CARD,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    marginVertical: 4,
+    marginHorizontal: SPACING.md,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+  },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
+  },
+  icon: {
+    fontSize: 18,
   },
   prayerName: {
-    fontSize: 18,
+    flex: 1,
+    fontSize: FONT_SIZES.subtitle,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.textPrimary,
     writingDirection: 'rtl',
   },
   prayerTime: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2e7d32',
+    fontSize: FONT_SIZES.title,
+    fontWeight: '700',
+    color: COLORS.gold,
+    fontVariant: ['tabular-nums'],
   },
 });

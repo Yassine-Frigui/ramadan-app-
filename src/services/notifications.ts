@@ -53,7 +53,7 @@ const scheduleNotification = async (
   });
 };
 
-export const schedulePrayerNotifications = async (prayers: PrayerTimes): Promise<void> => {
+export const schedulePrayerNotifications = async (prayers: PrayerTimes, minutesBefore: number = 15): Promise<void> => {
   await cancelAllNotifications();
 
   const prayerEntries: [PrayerName, string][] = [
@@ -76,16 +76,16 @@ export const schedulePrayerNotifications = async (prayers: PrayerTimes): Promise
       minutes
     );
 
-    const fifteenMinBeforeHour = minutes >= 15 ? hours : hours - 1;
-    const fifteenMinBeforeMinute = minutes >= 15 ? minutes - 15 : 60 + minutes - 15;
+    const beforeHour = minutes >= minutesBefore ? hours : hours - 1;
+    const beforeMinute = minutes >= minutesBefore ? minutes - minutesBefore : 60 + minutes - minutesBefore;
 
-    if (fifteenMinBeforeHour >= 0) {
+    if (beforeHour >= 0) {
       await scheduleNotification(
         `${prayer}-before`,
         t('prayerIn15', { prayer: prayerLabel }),
         t('prepareForPrayer', { prayer: prayerLabel }),
-        fifteenMinBeforeHour,
-        fifteenMinBeforeMinute
+        beforeHour,
+        beforeMinute
       );
     }
   }

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { DailyProgress } from '../types';
 import { t } from '../i18n';
+import { COLORS, SPACING, FONT_SIZES, RADIUS } from '../constants/theme';
 
 interface QuranProgressProps {
   progress: DailyProgress[];
@@ -30,49 +31,46 @@ export const QuranProgress: React.FC<QuranProgressProps> = ({ progress, totalDay
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 12,
-    marginVertical: 8,
-    marginHorizontal: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    backgroundColor: COLORS.bgCard,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    marginVertical: SPACING.sm,
+    marginHorizontal: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: SPACING.sm,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.subtitle,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.textPrimary,
     writingDirection: 'rtl',
   },
   percentage: {
-    fontSize: 24,
+    fontSize: FONT_SIZES.title,
     fontWeight: 'bold',
-    color: '#2e7d32',
+    color: COLORS.gold,
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: COLORS.bgElevated,
     borderRadius: 4,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#2e7d32',
+    backgroundColor: COLORS.gold,
     borderRadius: 4,
   },
   stats: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: FONT_SIZES.body,
+    color: COLORS.textSecondary,
     textAlign: 'center',
     writingDirection: 'rtl',
   },

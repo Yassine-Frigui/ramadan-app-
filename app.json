@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "تطبيق رمضان",
+    "name": "رفيق رمضان",
     "slug": "ramadan-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -23,7 +23,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2e7d32"
       },
-      "edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": false,
       "predictiveBackGestureEnabled": false,
       "package": "com.ramadan.app",
       "permissions": [
@@ -42,7 +42,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Ramadan App to use your location for prayer times."
+          "locationAlwaysAndWhenInUsePermission": "Allow Rafiq Ramadan to use your location for prayer times."
         }
       ],
       [

@@ -1,0 +1,9 @@
+Location: Tunis, Tunisia (lat=36.8065, lon=10.1815)
+Date: 2026-02-21
+Results:
+- aladhan:http:method=4 (Umm Al-Qura (Makkah)): F:05:32 D:12:40 A:15:38 M:18:09 I:20:06
+- aladhan:http:method=3 (Muslim World League): F:05:34 D:12:40 A:15:38 M:18:09 I:19:27
+- aladhan:http:method=2 (ISNA (North America)): F:05:49 D:12:40 A:15:38 M:18:09 I:19:17
+- aladhan:http:method=5 (Egyptian Authority): F:05:27 D:12:40 A:15:38 M:18:09 I:19:30
+- aladhan:http:method=1 (University of Karachi): F:05:34 D:12:40 A:15:38 M:18:09 I:19:32
+- aladhan:http:method=18 (Tunisia): F:05:34 D:12:40 A:15:38 M:18:09 I:19:32

@@ -1,14 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Alert, Platform, FlatList, Modal,
+  Alert, Platform, FlatList, Modal, TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { usePrayerTimes } from '../hooks';
+import { usePrayerTimes, useQuranPlan } from '../hooks';
 import { LocationData } from '../types';
 import { COLORS, SPACING, FONT_SIZES, RADIUS, GLASS_CARD, CARD_SHADOW } from '../constants/theme';
 import { COUNTRIES, CountryData, CityData } from '../data/locations';
@@ -19,6 +19,7 @@ const NOTIFICATION_MINUTES_OPTIONS = [5, 10, 15, 20, 30];
 
 export const SettingsScreen: React.FC = () => {
   const { location, setManualLocation, refresh } = usePrayerTimes();
+  const { plan, isRamadan, resetPlan, currentPlanDay } = useQuranPlan();
 
   // Dropdown state
   const [selectedCountry, setSelectedCountry] = useState<CountryData | null>(null);
@@ -26,6 +27,13 @@ export const SettingsScreen: React.FC = () => {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [notificationMinutes, setNotificationMinutes] = useState(15);
+
+  // Reading plan state
+  const [goalDays, setGoalDays] = useState('');
+
+  useEffect(() => {
+    if (plan) setGoalDays(String(plan.totalDays));
+  }, [plan]);
 
   const cities = useMemo(() => selectedCountry?.cities || [], [selectedCountry]);
 
@@ -83,29 +91,7 @@ export const SettingsScreen: React.FC = () => {
   };
 
   /** Fire an instant test notification */
-  const sendTestNotification = async () => {
-    if (Platform.OS === 'web') {
-      Alert.alert(t('testNotificationTitle'), t('testNotificationBody'));
-      return;
-    }
-    const { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') {
-      const { status: newStatus } = await Notifications.requestPermissionsAsync();
-      if (newStatus !== 'granted') {
-        Alert.alert(t('permissionDenied'), t('enableLocationInSettings'));
-        return;
-      }
-    }
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: t('testNotificationTitle'),
-        body: t('testNotificationBody'),
-        sound: true,
-      },
-      trigger: null,
-    });
-    Alert.alert(t('success'), t('testNotificationSent'));
-  };
+  // OVERRIDDEN , PROD ONLY 
 
   /** Render a picker modal (country OR city) */
   const renderPickerModal = (
@@ -277,14 +263,105 @@ export const SettingsScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Dev Section */}
+        {/* Reading Plan Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('readingPlan')}</Text>
+
+          {isRamadan ? (
+            <View style={styles.planInfo}>
+              <FontAwesome5 name="star-and-crescent" size={16} color={COLORS.gold} />
+              <Text style={styles.infoText}>{t('planAutoRamadan')}</Text>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.infoText}>{t('configurePlan')}</Text>
+
+              {/* Current plan info */}
+              {plan && (
+                <View style={styles.planCurrent}>
+                  <Text style={styles.planCurrentText}>
+                    {t('planDayOf', { day: currentPlanDay, total: plan.totalDays })}
+                  </Text>
+                </View>
+              )}
+
+              {/* Goal input */}
+              <Text style={[styles.label, { marginTop: SPACING.md, marginBottom: SPACING.sm }]}>
+                {t('planTotalDays')}
+              </Text>
+              <View style={styles.goalRow}>
+                <TextInput
+                  style={styles.goalInput}
+                  value={goalDays}
+                  onChangeText={setGoalDays}
+                  keyboardType="number-pad"
+                  placeholder="30"
+                  placeholderTextColor={COLORS.textMuted}
+                  maxLength={4}
+                />
+                <Text style={styles.goalUnit}>{t('planDaysUnit')}</Text>
+              </View>
+
+              {/* Quick presets */}
+              <View style={styles.minutesRow}>
+                {[30, 60, 90, 120].map((d) => (
+                  <TouchableOpacity
+                    key={d}
+                    style={[
+                      styles.minuteChip,
+                      goalDays === String(d) && styles.minuteChipActive,
+                    ]}
+                    onPress={() => setGoalDays(String(d))}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[
+                      styles.minuteChipText,
+                      goalDays === String(d) && styles.minuteChipTextActive,
+                    ]}>
+                      {d} {t('planDaysUnit')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Save / Reset */}
+              <TouchableOpacity
+                style={[styles.saveButton, { marginTop: SPACING.md }]}
+                onPress={() => {
+                  const num = Number.parseInt(goalDays, 10);
+                  if (!num || num < 1 || num > 999) {
+                    Alert.alert(t('error'), t('planSetGoal'));
+                    return;
+                  }
+                  Alert.alert(t('planReset'), t('planResetConfirm'), [
+                    { text: t('cancel'), style: 'cancel' },
+                    {
+                      text: t('confirm'),
+                      onPress: () => {
+                        resetPlan(num).then(() => {
+                          Alert.alert(t('success'), t('planSaved'));
+                        });
+                      },
+                    },
+                  ]);
+                }}
+                activeOpacity={0.8}
+              >
+                <FontAwesome5 name="sync" size={14} color={COLORS.gold} style={{ marginRight: 6 }} />
+                <Text style={[styles.saveButtonText, { color: COLORS.gold }]}>{t('planReset')}</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+
+        {/* Dev Section 
         <View style={styles.devSection}>
           <Text style={styles.devSectionTitle}>{t('devSection')}</Text>
           <TouchableOpacity style={styles.testButton} onPress={sendTestNotification} activeOpacity={0.8}>
             <FontAwesome5 name="bell" size={20} color={COLORS.gold} />
             <Text style={styles.testButtonText}>{t('testNotification')}</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
       </ScrollView>
 
       {/* Country Picker Modal */}
@@ -552,5 +629,53 @@ const styles = StyleSheet.create({
   },
   minuteChipTextActive: {
     color: COLORS.gold,
+  },
+
+  // Reading plan
+  planInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    backgroundColor: COLORS.goldGlow,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.gold + '22',
+  },
+  planCurrent: {
+    marginTop: SPACING.sm,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    alignItems: 'center',
+  },
+  planCurrentText: {
+    fontSize: FONT_SIZES.bodyLarge,
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+    writingDirection: 'rtl',
+  },
+  goalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  goalInput: {
+    flex: 1,
+    backgroundColor: COLORS.bgInput,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    fontSize: FONT_SIZES.subtitle,
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+    fontWeight: '700',
+  },
+  goalUnit: {
+    fontSize: FONT_SIZES.body,
+    color: COLORS.textSecondary,
+    writingDirection: 'rtl',
   },
 });

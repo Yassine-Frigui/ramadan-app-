@@ -17,7 +17,7 @@ export const ar = {
   isha: 'العشاء',
 
   // Home Screen
-  quranReading: 'ورد القرآن',
+  quranReading: 'قراءة القرآن',
   dayOf: 'اليوم {{day}} من {{total}}',
   pages: 'الصفحات {{start}} - {{end}}',
   todaysPrayerTimes: 'مواقيت صلاة اليوم',
@@ -27,28 +27,28 @@ export const ar = {
 
   // Quran Screen
   quranReadingPlan: 'خطة ختم القرآن',
-  daysProgress: '{{completed}} / {{total}} يوم ({{percentage}}%)',
+  daysProgress: 'أتممت {{completed}} من {{total}} يوم ({{percentage}}%)',
   day: 'اليوم {{day}}',
   pageRange: 'الصفحات {{start}} - {{end}}',
 
   // Progress / Status
-  ramadanProgress: 'تقدّم رمضان',
-  daysCompleted: '{{completed}} من {{total}} يوم مكتمل',
-  readingProgress: 'تقدّم القراءة',
+  ramadanProgress: 'مسيرة رمضان',
+  daysCompleted: 'أتممت {{completed}} من {{total}} يوم',
+  readingProgress: 'مسار القراءة',
   currentDay: 'يوم رمضان',
   readingDayLabel: 'يوم القراءة',
-  statusAhead: 'ممتاز! متقدّم',
-  statusOnTime: 'في الوقت المناسب',
-  statusBehind: 'يحتاج متابعة',
+  statusAhead: 'متقدّم ما شاء الله',
+  statusOnTime: 'في المسار الصحيح',
+  statusBehind: 'تحتاج متابعة',
   showDays: 'عرض الأيام',
   hideDays: 'إخفاء الأيام',
-  completed: 'مكتمل',
+  completed: 'تمّ',
   currentReading: 'القراءة الحالية',
-  allPagesRead: 'تمت قراءة جميع الصفحات!',
+  allPagesRead: 'ختمت القرآن! بارك الله فيك',
 
   // Prayer Times Screen
   refreshPrayerTimes: 'تحديث مواقيت الصلاة',
-  prayerSource: 'المصدر:',
+  prayerSource: 'مصدر',
   calculationMethod: 'طريقة الحساب',
   comparing: 'مقارنة',
   sources: 'مصادر',
@@ -91,6 +91,7 @@ export const ar = {
   locationNotAvailable: 'الموقع غير متاح. يرجى تمكين خدمات الموقع.',
   failedToLoadPrayerTimes: 'فشل في تحميل مواقيت الصلاة',
   success: 'تم بنجاح',
+    loadingPrayerTimes: 'جارٍ تحميل مواقيت الصلاة...',
   locationPermissionGranted: 'تم منح إذن الموقع',
   permissionDenied: 'تم رفض الإذن',
   enableLocationInSettings: 'يرجى تمكين الموقع في الإعدادات',
@@ -109,8 +110,8 @@ export const ar = {
   openReader: 'فتح المصحف',
   continueReading: 'متابعة القراءة',
   lastReadPage: 'آخر صفحة: {{page}}',
-  dailyQuotaReached: 'ماشاء الله! أكملت ورد اليوم',
-  remainingPages: 'المتبقي: {{pages}} صفحة في {{days}} يوم',
+  dailyQuotaReached: 'ما شاء الله! أتممت قراءة اليوم',
+  remainingPages: 'بقي {{pages}} صفحة خلال {{days}} يوم',
   pagesPerDayDynamic: '{{pages}} صفحة/يوم',
 
   // Date Tracker
@@ -123,4 +124,24 @@ export const ar = {
   // Notification settings
   notificationTimeBefore: 'وقت الإشعار قبل الصلاة',
   minutes: 'دقيقة',
+
+  // Flexible Quran Plan
+  quranPlanTitle: 'خطة قراءة القرآن',
+  planDay: 'اليوم {{day}}',
+  planDayOf: 'اليوم {{day}} من {{total}}',
+  planDaysRemaining: 'يوم متبقي',
+  cancel: 'إلغاء',
+  confirm: 'تأكيد',
+  planSetGoal: 'تحديد الهدف',
+  planTotalDays: 'ختم القرآن خلال',
+  planDaysUnit: 'يوم',
+  planStartDate: 'تاريخ البداية',
+  planStartToday: 'ابدأ اليوم',
+  planReset: 'إعادة تعيين الخطة',
+  planResetConfirm: 'سيتم إعادة تعيين تقدمك في القراءة. هل تريد المتابعة؟',
+  planSaved: 'تم حفظ خطة القراءة',
+  planAutoRamadan: 'وضع رمضان: ٣٠ يوماً، جزء يومياً',
+  planCustom: 'خطة مخصصة: {{days}} يوم',
+  readingPlan: 'خطة القراءة',
+  configurePlan: 'حدد هدف قراءة القرآن',
 };

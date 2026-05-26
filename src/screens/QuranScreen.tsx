@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import { useNavigation } from '@react-navigation/native';
-import { useRamadanPlan } from '../hooks';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useQuranPlan } from '../hooks';
 import { DailyProgress } from '../types';
 import { COLORS, SPACING, FONT_SIZES, RADIUS, GLASS_CARD, CARD_SHADOW } from '../constants/theme';
 import { t } from '../i18n';
@@ -17,10 +17,18 @@ export const QuranScreen: React.FC = () => {
   const {
     plan, progress, completedDays, progressPercentage,
     remainingPages, remainingDays, pagesPerRemainingDay,
-    currentRamadanDay, readingDay, status, lastReadPage,
-  } = useRamadanPlan(30);
+    currentPlanDay, readingDay, status, lastReadPage,
+    refreshProgress,
+  } = useQuranPlan();
 
   const [showDays, setShowDays] = useState(false);
+
+  // Refresh progress when screen gains focus (e.g., returning from QuranReader)
+  useFocusEffect(
+    useCallback(() => {
+      refreshProgress();
+    }, [refreshProgress])
+  );
 
 
   const getStatusLabel = () => {
@@ -42,14 +50,15 @@ export const QuranScreen: React.FC = () => {
   };
 
   const renderDayItem = ({ item }: { item: DailyProgress }) => {
-    const isCurrent = !item.completed && (
-      progress.findIndex((p) => !p.completed) === progress.indexOf(item)
-    );
-    const isPast = item.completed;
+    const isCurrent = item.day === currentPlanDay;
+    const isPastDay = item.day < currentPlanDay;
+    const isCompleted = item.completed;
+    const isMissed = isPastDay && !isCompleted;
     const pageCount = item.pagesEnd - item.pagesStart + 1;
 
     const getDotStyle = () => {
-      if (isPast) return styles.dotDone;
+      if (isCompleted) return styles.dotDone;
+      if (isMissed) return styles.dotMissed;
       if (isCurrent) return styles.dotCurrent;
       return styles.dotPending;
     };
@@ -58,26 +67,37 @@ export const QuranScreen: React.FC = () => {
       <View
         style={[
           styles.dayCard,
-          isPast && styles.dayCardCompleted,
+          isCompleted && styles.dayCardCompleted,
+          isMissed && styles.dayCardMissed,
           isCurrent && styles.dayCardCurrent,
-          !isCurrent && !isPast && { opacity: 0.5 },
+          isPastDay && { opacity: 0.55 },
+          !isPastDay && !isCurrent && { opacity: 0.7 },
         ]}
       >
         <View style={styles.dayLeft}>
           <View style={[styles.dayDot, getDotStyle()]} />
           <View style={styles.dayInfo}>
-            <Text style={[styles.dayNumber, isPast && styles.completedText, isCurrent && styles.currentText]}>
+            <Text style={[
+              styles.dayNumber,
+              isCompleted && styles.completedText,
+              isMissed && styles.missedText,
+              isCurrent && styles.currentText,
+            ]}>
               {t('day', { day: item.day })}
-              {isCurrent ? ` ← ${t('currentReading')}` : ''}
             </Text>
-            <Text style={[styles.pageRange, isPast && styles.completedTextDim]}>
-              {pageCount} {t('pagesPerDayDynamic', { pages: '' }).trim()}
+            <Text style={[styles.pageRange, isPastDay && styles.completedTextDim]}>
+              {t('pages', { start: item.pagesStart, end: item.pagesEnd })} ({pageCount})
             </Text>
           </View>
         </View>
-        {isPast && (
+        {isCompleted && (
           <View style={styles.checkWrap}>
             <FontAwesome5 name="check" size={14} color={COLORS.statusAhead} />
+          </View>
+        )}
+        {isMissed && (
+          <View style={styles.missedWrap}>
+            <FontAwesome5 name="times" size={14} color={COLORS.statusBehind} />
           </View>
         )}
       </View>
@@ -143,7 +163,7 @@ export const QuranScreen: React.FC = () => {
               {/* Stats grid */}
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{currentRamadanDay}</Text>
+                  <Text style={styles.statValue}>{currentPlanDay}</Text>
                   <Text style={styles.statLabel}>{t('currentDay')}</Text>
                 </View>
                 <View style={styles.statDivider} />
@@ -351,6 +371,9 @@ const styles = StyleSheet.create({
     borderColor: COLORS.gold + '44',
     borderWidth: 1.5,
   },
+  dayCardMissed: {
+    borderColor: COLORS.statusBehind + '22',
+  },
   dayLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -365,6 +388,7 @@ const styles = StyleSheet.create({
   dotDone: { backgroundColor: COLORS.statusAhead },
   dotCurrent: { backgroundColor: COLORS.gold },
   dotPending: { backgroundColor: COLORS.textMuted },
+  dotMissed: { backgroundColor: COLORS.statusBehind },
   dayInfo: {
     flex: 1,
   },
@@ -383,6 +407,9 @@ const styles = StyleSheet.create({
   currentText: {
     color: COLORS.gold,
   },
+  missedText: {
+    color: COLORS.statusBehind,
+  },
   pageRange: {
     fontSize: FONT_SIZES.caption,
     color: COLORS.textSecondary,
@@ -398,6 +425,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.emerald + '44',
+  },
+  missedWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.statusBehind + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.statusBehind + '44',
   },
 
 });

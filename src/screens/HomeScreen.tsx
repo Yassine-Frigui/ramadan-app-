@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity
 import { LinearGradient } from 'expo-linear-gradient';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { useNavigation } from '@react-navigation/native';
-import { usePrayerTimes, useRamadanPlan } from '../hooks';
+import { usePrayerTimes, useQuranPlan } from '../hooks';
 import { PRAYER_NAMES } from '../constants';
 import { COLORS, SPACING, FONT_SIZES, RADIUS, GLASS_CARD, CARD_SHADOW } from '../constants/theme';
 import { t } from '../i18n';
@@ -16,8 +16,11 @@ export const HomeScreen: React.FC = () => {
   const { prayerTimes, isLoading: prayersLoading, error: prayersError } = usePrayerTimes();
   const {
     isLoading: planLoading, pagesRead, remainingPages, status,
-    currentRamadanDay, pagesPerRemainingDay, progressPercentage,
-  } = useRamadanPlan(30);
+    currentPlanDay, pagesPerRemainingDay, progressPercentage, plan, isRamadan,
+  } = useQuranPlan();
+
+  const totalDays = plan?.totalDays ?? 30;
+  const daysRemaining = Math.max(0, totalDays - currentPlanDay);
 
 
   const getStatusLabel = () => {
@@ -50,28 +53,32 @@ export const HomeScreen: React.FC = () => {
 
         {/* ── Hero Section ── */}
         <View style={styles.hero}>
-          <FontAwesome5 name="star-and-crescent" size={36} color={COLORS.gold} style={{ marginBottom: SPACING.sm }} />
+          <FontAwesome5 name={isRamadan ? 'star-and-crescent' : 'book-quran'} size={36} color={COLORS.gold} style={{ marginBottom: SPACING.sm }} />
           <Text style={styles.heroTitle}>{t('appName')}</Text>
           <Text style={styles.heroDate}>{formatArabicDate(new Date())}</Text>
 
-          {/* Big Ramadan Day Counter */}
+          {/* Day Counter */}
           <View style={styles.dayCounter}>
             <View style={styles.dayCounterRing}>
-              <Text style={styles.dayCounterNumber}>{currentRamadanDay}</Text>
+              <Text style={styles.dayCounterNumber}>{currentPlanDay}</Text>
             </View>
-            <Text style={styles.dayCounterLabel}>{t('ramadanDay', { day: '' }).trim()}</Text>
+            <Text style={styles.dayCounterLabel}>
+              {isRamadan
+                ? t('ramadanDay', { day: '' }).trim()
+                : t('planDayOf', { day: currentPlanDay, total: totalDays })}
+            </Text>
           </View>
 
           {/* Mini stats row */}
           <View style={styles.miniStats}>
             <View style={styles.miniStat}>
-              <Text style={styles.miniStatValue}>{30 - currentRamadanDay}</Text>
-              <Text style={styles.miniStatLabel}>يوم متبقي</Text>
+              <Text style={styles.miniStatValue}>{daysRemaining}</Text>
+              <Text style={styles.miniStatLabel}>{t('planDaysRemaining')}</Text>
             </View>
             <View style={styles.miniStatDivider} />
             <View style={styles.miniStat}>
               <Text style={styles.miniStatValue}>{progressPercentage}%</Text>
-              <Text style={styles.miniStatLabel}>ورد القرآن</Text>
+              <Text style={styles.miniStatLabel}>{t('quranReading')}</Text>
             </View>
           </View>
         </View>

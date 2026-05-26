@@ -27,28 +27,28 @@ export const en = {
 
   // Quran Screen
   quranReadingPlan: 'Quran Reading Plan',
-  daysProgress: '{{completed}} / {{total}} days ({{percentage}}%)',
+  daysProgress: 'Completed {{completed}} of {{total}} days ({{percentage}}%)',
   day: 'Day {{day}}',
   pageRange: 'Pages {{start}} - {{end}}',
 
   // Progress / Status
-  ramadanProgress: 'Ramadan Progress',
-  daysCompleted: '{{completed}} of {{total}} days completed',
-  readingProgress: 'Reading Progress',
+  ramadanProgress: 'Ramadan Journey',
+  daysCompleted: 'Completed {{completed}} of {{total}} days',
+  readingProgress: 'Reading Path',
   currentDay: 'Ramadan Day',
   readingDayLabel: 'Reading Day',
-  statusAhead: 'Excellent! Ahead',
-  statusOnTime: 'Right on time',
-  statusBehind: 'Need to catch up',
+  statusAhead: 'Ahead - MashaAllah',
+  statusOnTime: 'On the right track',
+  statusBehind: 'Needs attention',
   showDays: 'Show Days',
   hideDays: 'Hide Days',
-  completed: 'Completed',
+  completed: 'Done',
   currentReading: 'Current Reading',
-  allPagesRead: 'All pages read!',
+  allPagesRead: 'Quran completed! Barakallahu feek',
 
   // Prayer Times Screen
   refreshPrayerTimes: 'Refresh Prayer Times',
-  prayerSource: 'Source:',
+  prayerSource: 'Source',
   calculationMethod: 'Calculation Method',
   comparing: 'Comparing',
   sources: 'sources',
@@ -56,6 +56,7 @@ export const en = {
   apiError: 'Connection error',
   swipeToCompare: 'Swipe to compare sources',
   loadingAllSources: 'Loading all sources...',
+    loadingPrayerTimes: 'Loading prayer times...',
   noTimesAvailable: 'No times available',
   sunrise: 'Sunrise',
 
@@ -109,8 +110,8 @@ export const en = {
   openReader: 'Open Mushaf',
   continueReading: 'Continue Reading',
   lastReadPage: 'Last page: {{page}}',
-  dailyQuotaReached: 'MashaAllah! You completed today\'s reading',
-  remainingPages: 'Remaining: {{pages}} pages in {{days}} days',
+  dailyQuotaReached: 'MashaAllah! You finished today\'s reading',
+  remainingPages: '{{pages}} pages left over {{days}} days',
   pagesPerDayDynamic: '{{pages}} pages/day',
 
   // Date Tracker
@@ -123,4 +124,24 @@ export const en = {
   // Notification settings
   notificationTimeBefore: 'Notification time before prayer',
   minutes: 'min',
+
+  // Flexible Quran Plan
+  quranPlanTitle: 'Quran Reading Plan',
+  planDay: 'Day {{day}}',
+  planDayOf: 'Day {{day}} of {{total}}',
+  planDaysRemaining: 'days remaining',
+  cancel: 'Cancel',
+  confirm: 'Confirm',
+  planSetGoal: 'Set Goal',
+  planTotalDays: 'Complete Quran in',
+  planDaysUnit: 'days',
+  planStartDate: 'Start Date',
+  planStartToday: 'Start Today',
+  planReset: 'Reset Plan',
+  planResetConfirm: 'This will reset your reading progress. Continue?',
+  planSaved: 'Reading plan saved',
+  planAutoRamadan: 'Ramadan mode: 30 days, 1 Juz/day',
+  planCustom: 'Custom plan: {{days}} days',
+  readingPlan: 'Reading Plan',
+  configurePlan: 'Configure your Quran reading goal',
 };

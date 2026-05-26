@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import {
   ActivityIndicator,
   Animated,
   PanResponder,
-  I18nManager,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuranReader } from '../hooks/useQuranReader';
@@ -20,7 +21,8 @@ import { t } from '../i18n';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SWIPE_THRESHOLD = 50;
+const SWIPE_THRESHOLD = 60;
+const FADE_DURATION = 180;
 
 interface QuranReaderScreenProps {
   navigation: any;
@@ -36,6 +38,16 @@ export const QuranReaderScreen: React.FC<QuranReaderScreenProps> = ({ navigation
   const [quotaBanner, setQuotaBanner] = useState<string | null>(null);
   const bannerOpacity = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
+
+  // Cross-fade animation
+  const pageOpacity = useRef(new Animated.Value(1)).current;
+
+  // Scroll-down arrow state
+  const [showScrollArrow, setShowScrollArrow] = useState(false);
+  const scrollArrowAnim = useRef(new Animated.Value(0)).current;
+  const contentHeight = useRef(0);
+  const viewportHeight = useRef(0);
+  const scrollY = useRef(0);
 
   // Get the target page from navigation params (from QuranScreen day card)
   const targetPage = route?.params?.targetPage;
@@ -64,22 +76,76 @@ export const QuranReaderScreen: React.FC<QuranReaderScreenProps> = ({ navigation
     }
   }, [currentPage, dailyEndPage]);
 
+  // ─── Scroll arrow bounce animation ───
+  useEffect(() => {
+    if (showScrollArrow) {
+      const bounce = Animated.loop(
+        Animated.sequence([
+          Animated.timing(scrollArrowAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+          Animated.timing(scrollArrowAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
+        ])
+      );
+      bounce.start();
+      return () => bounce.stop();
+    }
+  }, [showScrollArrow]);
+
+  const checkScrollArrowVisibility = useCallback(() => {
+    const isScrollable = contentHeight.current > viewportHeight.current + 20;
+    const atBottom = scrollY.current + viewportHeight.current >= contentHeight.current - 30;
+    setShowScrollArrow(isScrollable && !atBottom);
+  }, []);
+
+  // Re-check scroll arrow when page changes
+  useEffect(() => {
+    // Reset and re-check after content loads
+    const timer = setTimeout(checkScrollArrowVisibility, 200);
+    return () => clearTimeout(timer);
+  }, [currentPage, checkScrollArrowVisibility]);
+
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollY.current = e.nativeEvent.contentOffset.y;
+    checkScrollArrowVisibility();
+  }, [checkScrollArrowVisibility]);
+
+  const onContentSizeChange = useCallback((_w: number, h: number) => {
+    contentHeight.current = h;
+    checkScrollArrowVisibility();
+  }, [checkScrollArrowVisibility]);
+
+  const onLayout = useCallback((e: any) => {
+    viewportHeight.current = e.nativeEvent.layout.height;
+    checkScrollArrowVisibility();
+  }, [checkScrollArrowVisibility]);
+
+  // ─── Cross-fade page transition ───
+  const fadeToPage = useCallback((changeFn: () => void) => {
+    Animated.timing(pageOpacity, { toValue: 0, duration: FADE_DURATION, useNativeDriver: true }).start(() => {
+      changeFn();
+      Animated.timing(pageOpacity, { toValue: 1, duration: FADE_DURATION, useNativeDriver: true }).start();
+    });
+  }, [pageOpacity]);
+
   // Swipe gesture — RTL: swipe left = next page, swipe right = previous page
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_evt, gestureState) => {
-        // Only capture horizontal swipes (not vertical scrolling)
         return Math.abs(gestureState.dx) > 20 && Math.abs(gestureState.dy) < Math.abs(gestureState.dx);
+      },
+      onPanResponderMove: (_evt, gestureState) => {
+        // Live fade: opacity decreases as user drags horizontally
+        const progress = Math.min(Math.abs(gestureState.dx) / (SCREEN_WIDTH * 0.4), 1);
+        pageOpacity.setValue(1 - progress * 0.7);
       },
       onPanResponderRelease: (_evt, gestureState) => {
         if (gestureState.dx < -SWIPE_THRESHOLD) {
-          // Swipe left → next page (RTL: higher page number)
-          previousPage();
+          fadeToPage(previousPage);
         } else if (gestureState.dx > SWIPE_THRESHOLD) {
-          // Swipe right → previous page (RTL: lower page number)
-          
-          nextPage();
+          fadeToPage(nextPage);
+        } else {
+          // Snap back
+          Animated.timing(pageOpacity, { toValue: 1, duration: 120, useNativeDriver: true }).start();
         }
       },
     })
@@ -88,7 +154,7 @@ export const QuranReaderScreen: React.FC<QuranReaderScreenProps> = ({ navigation
   const handleGoToPage = () => {
     const page = Number.parseInt(pageInput, 10);
     if (page >= 1 && page <= 604) {
-      goToPage(page);
+      fadeToPage(() => goToPage(page));
       setShowGoTo(false);
       setPageInput('');
     }
@@ -195,6 +261,10 @@ export const QuranReaderScreen: React.FC<QuranReaderScreenProps> = ({ navigation
       <View style={styles.pageContainer} {...panResponder.panHandlers}>
         <ScrollView
           ref={scrollRef}
+          onScroll={onScroll}
+          onContentSizeChange={onContentSizeChange}
+          onLayout={onLayout}
+          scrollEventThrottle={32}
           contentContainerStyle={[
             styles.pageContent,
             {
@@ -203,17 +273,35 @@ export const QuranReaderScreen: React.FC<QuranReaderScreenProps> = ({ navigation
             },
           ]}
           showsVerticalScrollIndicator={false}
-          onTouchEnd={() => {
-            // Toggle controls on tap (only if no significant pan occurred)
-          }}
         >
           <TouchableOpacity
             activeOpacity={1}
             onPress={() => setShowControls(!showControls)}
           >
-            {renderPageContent()}
+            <Animated.View style={{ opacity: pageOpacity }}>
+              {renderPageContent()}
+            </Animated.View>
           </TouchableOpacity>
         </ScrollView>
+
+        {/* Floating scroll-down arrow */}
+        {showScrollArrow && (
+          <Animated.View
+            style={[
+              styles.scrollArrow,
+              {
+                bottom: showControls ? 12 + 56 + (insets.bottom || 8) : 12 + (insets.bottom || 8),
+                opacity: scrollArrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 0.35] }),
+                transform: [{
+                  translateY: scrollArrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 6] }),
+                }],
+              },
+            ]}
+            pointerEvents="none"
+          >
+            <FontAwesome5 name="chevron-down" size={14} color={COLORS.goldDim} />
+          </Animated.View>
+        )}
       </View>
 
       {/* Daily quota banner */}
@@ -226,11 +314,11 @@ export const QuranReaderScreen: React.FC<QuranReaderScreenProps> = ({ navigation
       {/* Bottom navigation — RTL: left arrow = next (higher page), right arrow = prev (lower page) */}
       {showControls && (
         <View style={[styles.bottomNav, { paddingBottom: insets.bottom + SPACING.xs }]}>
-          <TouchableOpacity onPress={previousPage} style={styles.navButton}>
+          <TouchableOpacity onPress={() => fadeToPage(previousPage)} style={styles.navButton}>
             <FontAwesome5 name="chevron-right" size={18} color={COLORS.gold} />
           </TouchableOpacity>
           <Text style={styles.pageIndicator}>{currentPage} / 604</Text>
-          <TouchableOpacity onPress={nextPage} style={styles.navButton}>
+          <TouchableOpacity onPress={() => fadeToPage(nextPage)} style={styles.navButton}>
             <FontAwesome5 name="chevron-left" size={18} color={COLORS.gold} />
           </TouchableOpacity>
         </View>
@@ -374,8 +462,9 @@ const styles = StyleSheet.create({
     fontSize: 26,
     lineHeight: 56,
     color: COLORS.readerText,
-    textAlign: 'right',
+    textAlign: 'auto',
     writingDirection: 'rtl',
+    direction: 'rtl',
     fontFamily: undefined, // uses system Arabic font
   },
   ayahNumber: {
@@ -439,5 +528,24 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.bodyLarge,
     color: COLORS.textSecondary,
     fontWeight: '600',
+  },
+
+  // ─── Scroll arrow ───
+  scrollArrow: {
+    position: 'absolute',
+    alignSelf: 'center',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: COLORS.readerBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    borderWidth: 1,
+    borderColor: COLORS.goldDim + '33',
   },
 });

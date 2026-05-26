@@ -24,7 +24,7 @@ export const fetchPrayerTimes = async (
   const targetDate = date || new Date();
   const dateString = format(targetDate, 'dd-MM-yyyy');
   
-  const url = `${API_ENDPOINTS.PRAYER_TIMINGS}/${dateString}?latitude=${location.latitude}&longitude=${location.longitude}&method=4`;
+  const url = `${API_ENDPOINTS.PRAYER_TIMINGS}/${dateString}?latitude=${location.latitude}&longitude=${location.longitude}&method=18&tune=0,0,0,7,0,3,3`;
   
   const response = await fetch(url);
   if (!response.ok) {

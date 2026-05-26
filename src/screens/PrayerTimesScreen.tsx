@@ -1,29 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import * as Location from 'expo-location';
 import { COLORS, SPACING, FONT_SIZES, RADIUS, GLASS_CARD } from '../constants/theme';
 import { PRAYER_NAMES, RAMADAN_START_DATE } from '../constants';
-import {
-  fetchAllPrayerSources,
-  PRAYER_METHODS,
-  MECCA_FALLBACK_TIMES,
-  MultiSourceResult,
-} from '../services/prayerTimesMulti';
-import { LocationData } from '../types';
-import { getLocation } from '../storage/storage';
+import { usePrayerTimes } from '../hooks';
 import { t } from '../i18n';
-
-const DEFAULT_LOCATION: LocationData = {
-  latitude: 36.8065,
-  longitude: 10.1815,
-  city: 'تونس',
-  country: 'تونس',
-};
 
 const PRAYER_ICONS: Record<string, { icon: string; color: string }> = {
   fajr: { icon: 'moon', color: '#B0C4DE' },
@@ -34,61 +19,18 @@ const PRAYER_ICONS: Record<string, { icon: string; color: string }> = {
 };
 
 export const PrayerTimesScreen: React.FC = () => {
-  const [results, setResults] = useState<MultiSourceResult[]>([]);
-  const [activeTab, setActiveTab] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [location, setLocation] = useState<LocationData | null>(null);
+  const {
+    prayerTimes,
+    isLoading,
+    error,
+    refresh,
+  } = usePrayerTimes();
 
   const today = new Date();
   const diffMs = today.getTime() - RAMADAN_START_DATE.getTime();
   const ramadanDay = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1);
 
-  const fetchLocation = useCallback(async (): Promise<LocationData> => {
-    try {
-      if (Platform.OS === 'web') {
-        const saved = await getLocation();
-        if (saved) return saved;
-        return DEFAULT_LOCATION;
-      }
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        const saved = await getLocation();
-        return saved || DEFAULT_LOCATION;
-      }
-      const loc = await Location.getCurrentPositionAsync({});
-      return {
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-      };
-    } catch {
-      const saved = await getLocation();
-      return saved || DEFAULT_LOCATION;
-    }
-  }, []);
-
-  const loadAll = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const loc = location || (await fetchLocation());
-      setLocation(loc);
-      const data = await fetchAllPrayerSources(loc);
-      setResults(data);
-    } catch {
-      setResults([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [location, fetchLocation]);
-
-  useEffect(() => {
-    loadAll();
-  }, []);
-
-  const dateStr = results.find((r) => r.times)?.times?.date || '';
-  const activeResult = results[activeTab];
-  const activeTimes = activeResult?.times;
-  const activeError = activeResult?.error;
-  const successCount = results.filter((r) => r.times).length;
+  const dateStr = prayerTimes?.date || '';
 
   const renderPrayerRow = (name: string, time: string, isLast: boolean) => {
     const iconData = PRAYER_ICONS[name] || { icon: 'clock', color: COLORS.textMuted };
@@ -106,22 +48,19 @@ export const PrayerTimesScreen: React.FC = () => {
   };
 
   const renderTimesCard = () => {
-    if (activeTimes) {
+    if (prayerTimes) {
       return (
         <View style={styles.timesCard}>
-          {PRAYER_NAMES.map((p, i) => renderPrayerRow(p, activeTimes[p], i === PRAYER_NAMES.length - 1))}
+          {PRAYER_NAMES.map((p, i) => renderPrayerRow(p, prayerTimes[p], i === PRAYER_NAMES.length - 1))}
         </View>
       );
     }
-    if (activeError) {
+    if (error) {
       return (
         <View style={styles.errorCard}>
           <FontAwesome5 name="exclamation-triangle" size={32} color={COLORS.statusBehind} style={{ marginBottom: SPACING.sm }} />
           <Text style={styles.errorText}>{t('apiError')}</Text>
-          <Text style={styles.errorDetail}>{activeError}</Text>
-          <View style={styles.fallbackDivider} />
-          <Text style={styles.fallbackLabel}>{t('fallbackTimes')}</Text>
-          {PRAYER_NAMES.map((p, i) => renderPrayerRow(p, MECCA_FALLBACK_TIMES[p], i === PRAYER_NAMES.length - 1))}
+          <Text style={styles.errorDetail}>{error}</Text>
         </View>
       );
     }
@@ -147,31 +86,6 @@ export const PrayerTimesScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Source tabs with labels */}
-      <View style={styles.dotsRow}>
-        {PRAYER_METHODS.map((method, index) => {
-          const isActive = index === activeTab;
-          const hasData = results[index]?.times != null;
-          const hasError = results[index]?.error != null;
-          return (
-            <TouchableOpacity
-              key={method.key}
-              style={[
-                styles.sourceTab,
-                isActive && styles.sourceTabActive,
-                hasError && !hasData && styles.sourceTabError,
-              ]}
-              onPress={() => setActiveTab(index)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.sourceTabText, isActive && styles.sourceTabTextActive]}>
-                {t('prayerSource')} {index + 1}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
       {/* Content */}
       <ScrollView
         style={styles.content}
@@ -181,51 +95,14 @@ export const PrayerTimesScreen: React.FC = () => {
         {isLoading ? (
           <View style={styles.loaderWrap}>
             <ActivityIndicator size="large" color={COLORS.gold} />
-            <Text style={styles.loaderText}>{t('loadingAllSources')}</Text>
+            <Text style={styles.loaderText}>{t('loadingPrayerTimes')}</Text>
           </View>
         ) : (
           <>
             {renderTimesCard()}
 
-            {/* Comparison table — without source names */}
-            {successCount > 1 && (
-              <View style={styles.comparisonCard}>
-                <View style={styles.comparisonTitleRow}>
-                  <FontAwesome5 name="chart-bar" size={16} color={COLORS.gold} />
-                  <Text style={styles.comparisonTitle}>{t('comparing')}</Text>
-                </View>
-                <View style={styles.tableHeaderRow}>
-                  <Text style={[styles.tableHeaderCell, styles.tableFirstCol]}>{t('prayerSource')}</Text>
-                  {PRAYER_NAMES.map((p) => (
-                    <Text key={p} style={styles.tableHeaderCell}>{t(p)}</Text>
-                  ))}
-                </View>
-                {results.map((r, idx) => {
-                  if (!r.times) return null;
-                  const isActiveRow = idx === activeTab;
-                  return (
-                    <TouchableOpacity
-                      key={r.method.key}
-                      style={[styles.tableRow, isActiveRow && styles.tableRowActive]}
-                      onPress={() => setActiveTab(idx)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.tableCell, styles.tableFirstCol, styles.tableCellIndex]}>
-                        <Text style={[styles.tableIndexLabel, isActiveRow && styles.tableCellActive]}>{idx + 1}</Text>
-                      </View>
-                      {PRAYER_NAMES.map((p) => (
-                        <Text key={p} style={[styles.tableCell, isActiveRow && styles.tableCellActive]}>
-                          {r.times![p]}
-                        </Text>
-                      ))}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-
             {/* Refresh */}
-            <TouchableOpacity style={styles.refreshButton} onPress={loadAll} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.refreshButton} onPress={refresh} activeOpacity={0.8}>
               <FontAwesome5 name="sync-alt" size={16} color={COLORS.gold} style={{ marginRight: 8 }} />
               <Text style={styles.refreshText}>{t('refreshPrayerTimes')}</Text>
             </TouchableOpacity>
@@ -291,7 +168,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   sourceTab: {
-    paddingHorizontal: SPACING.sm + 2,
+    paddingHorizontal: SPACING.sm + 4,
     paddingVertical: SPACING.xs + 2,
     borderRadius: RADIUS.lg,
     backgroundColor: 'rgba(255,255,255,0.06)',

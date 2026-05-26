@@ -1,3 +1,16 @@
+/**
+ * Flexible Quran reading plan.
+ * During Ramadan: totalDays=30, startDate = Ramadan start.
+ * Outside Ramadan: user picks any totalDays and startDate.
+ */
+export interface QuranPlan {
+  totalDays: number;
+  startDate: string;           // ISO date string (YYYY-MM-DD)
+  pagesPerDay: number[];
+  isRamadan: boolean;          // true when auto-created for Ramadan
+}
+
+/** @deprecated Use QuranPlan instead */
 export interface RamadanPlan {
   totalDays: 29 | 30;
   pagesPerDay: number[];

@@ -31,7 +31,6 @@ export const usePrayerTimes = () => {
 
   const fetchLocation = useCallback(async (): Promise<LocationData> => {
     try {
-      // On web, expo-location may not work; try browser geolocation
       if (Platform.OS === 'web') {
         const saved = await getLocation();
         if (saved) return saved;
@@ -39,7 +38,7 @@ export const usePrayerTimes = () => {
       }
 
       const { status } = await Location.requestForegroundPermissionsAsync();
-      
+
       if (status !== 'granted') {
         const savedLocation = await getLocation();
         return savedLocation || DEFAULT_LOCATION;
@@ -60,24 +59,31 @@ export const usePrayerTimes = () => {
     }
   }, []);
 
-  const loadPrayerTimes = useCallback(async () => {
+  /**
+   * Load prayer times with offline-first strategy:
+   * 1. If today's cache exists → use it, do NOT hit the network.
+   * 2. If no cache → fetch from network once, save, schedule notifications.
+   * @param forceRefresh  bypass the cache and fetch fresh data (manual refresh)
+   */
+  const loadPrayerTimes = useCallback(async (forceRefresh = false) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // 1. Try loading from cache immediately for instant UI
       const cacheKey = getCacheKey();
-      const cached = await AsyncStorage.getItem(cacheKey);
-      if (cached) {
-        const cachedTimes: PrayerTimes = JSON.parse(cached);
-        setPrayerTimes(cachedTimes);
-        setIsLoading(false);
-        // Fire-and-forget: refresh in background
-        refreshInBackground(cacheKey);
-        return;
+
+      // ── Offline path: return cache if available (unless forced) ──
+      if (!forceRefresh) {
+        const cached = await AsyncStorage.getItem(cacheKey);
+        if (cached) {
+          const cachedTimes: PrayerTimes = JSON.parse(cached);
+          setPrayerTimes(cachedTimes);
+          setIsLoading(false);
+          return; // No network call at all
+        }
       }
 
-      // 2. No cache — load fresh
+      // ── Online path: fetch once, cache, schedule notifications ──
       let loc = location;
       loc ??= await fetchLocation();
       setLocation(loc);
@@ -85,7 +91,7 @@ export const usePrayerTimes = () => {
       const times = await fetchPrayerTimes(loc);
       setPrayerTimes(times);
 
-      // Cache for today
+      // Persist for the rest of the day
       await AsyncStorage.setItem(cacheKey, JSON.stringify(times));
 
       // Schedule notifications (fire-and-forget)
@@ -97,21 +103,6 @@ export const usePrayerTimes = () => {
       setIsLoading(false);
     }
   }, [location, fetchLocation]);
-
-  /** Background refresh: fetch fresh data and update cache + state silently */
-  const refreshInBackground = async (cacheKey: string) => {
-    try {
-      let loc = location;
-      loc ??= await fetchLocation();
-      setLocation(loc);
-      const times = await fetchPrayerTimes(loc);
-      setPrayerTimes(times);
-      await AsyncStorage.setItem(cacheKey, JSON.stringify(times));
-      scheduleNotificationsAsync(times);
-    } catch {
-      // Silently ignore — we already have cached data displayed
-    }
-  };
 
   const scheduleNotificationsAsync = async (times: PrayerTimes) => {
     try {
@@ -130,8 +121,9 @@ export const usePrayerTimes = () => {
     loadPrayerTimes();
   }, []);
 
+  /** Manual refresh — forces a network fetch even if cache exists */
   const refresh = useCallback(() => {
-    loadPrayerTimes();
+    loadPrayerTimes(true);
   }, [loadPrayerTimes]);
 
   return {
@@ -143,7 +135,8 @@ export const usePrayerTimes = () => {
     setManualLocation: async (loc: LocationData) => {
       await saveLocation(loc);
       setLocation(loc);
-      loadPrayerTimes();
+      // Force refresh after location change so we get times for the new coords
+      loadPrayerTimes(true);
     },
   };
 };
